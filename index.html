@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>해피카 AI 음성 상담</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: #ebf2f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+      padding: 20px;
+    }
+
+    .card {
+      background: #ffffff;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(2, 169, 246, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 헤더 영역 */
+    .header {
+      background: linear-gradient(135deg, #02a9f6 0%, #0090d9 100%);
+      padding: 32px 24px 28px;
+      text-align: center;
+      color: #ffffff;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -40px;
+      right: -40px;
+      width: 120px;
+      height: 120px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 50%;
+    }
+
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: -20px;
+      width: 80px;
+      height: 80px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 50%;
+    }
+
+    .header-icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+    }
+
+    .header h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      opacity: 0.95;
+    }
+
+    .header p {
+      font-size: 13px;
+      font-weight: 400;
+      opacity: 0.85;
+      line-height: 1.5;
+    }
+
+    /* 메인 컨텐츠 */
+    .content {
+      padding: 40px 24px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 마이크 버튼 */
+    .mic-wrapper {
+      position: relative;
+      width: 130px;
+      height: 130px;
+      margin-bottom: 20px;
+    }
+
+    .mic-pulse {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: rgba(2, 169, 246, 0.1);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .mic-pulse.active {
+      animation: pulse 2s ease-out infinite;
+    }
+
+    .mic-pulse.active:nth-child(2) {
+      animation-delay: 0.6s;
+    }
+
+    .mic-pulse.active:nth-child(3) {
+      animation-delay: 1.2s;
+    }
+
+    @keyframes pulse {
+      0% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.5;
+      }
+      100% {
+        transform: translate(-50%, -50%) scale(1.8);
+        opacity: 0;
+      }
+    }
+
+    .mic-button {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #02a9f6 0%, #0090d9 100%);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 10px;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 6px 24px rgba(2, 169, 246, 0.35);
+      z-index: 1;
+    }
+
+    .mic-button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 8px 32px rgba(2, 169, 246, 0.45);
+    }
+
+    .mic-button:active {
+      transform: scale(0.97);
+    }
+
+    .mic-button.listening {
+      background: linear-gradient(145deg, #ff6b6b 0%, #ee5a24 100%);
+      box-shadow: 0 6px 24px rgba(255, 107, 107, 0.4);
+    }
+
+    .mic-button svg {
+      width: 44px;
+      height: 44px;
+      fill: #ffffff;
+    }
+
+    /* 상태 표시 */
+    .status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 32px;
+      padding: 8px 20px;
+      background: #f5f8fb;
+      border-radius: 20px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #b0bec5;
+      transition: background 0.3s ease;
+    }
+
+    .status-dot.ready {
+      background: #b0bec5;
+    }
+
+    .status-dot.listening {
+      background: #4caf50;
+      animation: blink 1s ease-in-out infinite;
+    }
+
+    .status-dot.processing {
+      background: #ff9800;
+      animation: blink 0.5s ease-in-out infinite;
+    }
+
+    .status-dot.speaking {
+      background: #02a9f6;
+      animation: blink 0.8s ease-in-out infinite;
+    }
+
+    .status-dot.error {
+      background: #f44336;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .status-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #607d8b;
+    }
+
+    /* 푸터 */
+    .footer {
+      text-align: center;
+      padding-bottom: 4px;
+    }
+
+    .footer span {
+      font-size: 12px;
+      color: #b0bec5;
+      font-weight: 400;
+    }
+
+    /* ElevenLabs 위젯 숨김 */
+    elevenlabs-convai {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- 헤더 -->
+    <div class="header">
+      <div class="header-icon">🚗</div>
+      <h1>해피카</h1>
+      <h2>AI 상담사 '해피'</h2>
+      <p>차량 정비, 견적, 예약 관련 질문을 도와드립니다</p>
+    </div>
+
+    <!-- 메인 컨텐츠 -->
+    <div class="content">
+      <!-- 마이크 버튼 -->
+      <div class="mic-wrapper">
+        <div class="mic-pulse" id="pulse1"></div>
+        <div class="mic-pulse" id="pulse2"></div>
+        <div class="mic-pulse" id="pulse3"></div>
+        <button class="mic-button" id="micButton" onclick="toggleConversation()">
+          <!-- 마이크 아이콘 -->
+          <svg id="micIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm-1-9c0-.55.45-1 1-1s1 .45 1 1v6c0 .55-.45 1-1 1s-1-.45-1-1V5z"/>
+            <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+          </svg>
+          <!-- 정지 아이콘 (숨김) -->
+          <svg id="stopIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="display:none;">
+            <rect x="6" y="6" width="12" height="12" rx="2"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 상태 표시 -->
+      <div class="status">
+        <div class="status-dot ready" id="statusDot"></div>
+        <span class="status-text" id="statusText">대기 중</span>
+      </div>
+
+      <!-- 푸터 -->
+      <div class="footer">
+        <span>AI Voice Assistant</span>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { Conversation } from 'https://esm.sh/@elevenlabs/client@latest';
+
+    // ===== 상태 =====
+    const AGENT_ID = 'agent_0001khqy0he8etbsmjre686vsdea';
+    let conversation = null;
+
+    // ===== DOM =====
+    const micButton = document.getElementById('micButton');
+    const micIcon = document.getElementById('micIcon');
+    const stopIcon = document.getElementById('stopIcon');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const pulses = [
+      document.getElementById('pulse1'),
+      document.getElementById('pulse2'),
+      document.getElementById('pulse3')
+    ];
+
+    // ===== UI 헬퍼 =====
+    function setStatus(state, text) {
+      statusDot.className = 'status-dot ' + state;
+      statusText.textContent = text;
+    }
+
+    function setPulseActive(active) {
+      pulses.forEach(p => p.classList.toggle('active', active));
+    }
+
+    function setUIActive(active) {
+      micButton.classList.toggle('listening', active);
+      micIcon.style.display = active ? 'none' : 'block';
+      stopIcon.style.display = active ? 'block' : 'none';
+      setPulseActive(active);
+    }
+
+    // ===== 대화 시작 =====
+    async function startConversation() {
+      try {
+        setUIActive(true);
+        setStatus('processing', '연결 중...');
+
+        // 마이크 권한 먼저 요청
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+
+        conversation = await Conversation.startSession({
+          agentId: AGENT_ID,
+          onConnect: () => {
+            console.log('ElevenLabs 연결됨');
+            setStatus('listening', '음성 상담 중...');
+          },
+          onDisconnect: () => {
+            console.log('ElevenLabs 연결 종료');
+            resetUI();
+          },
+          onError: (error) => {
+            console.error('ElevenLabs 오류:', error);
+            setStatus('error', '연결 오류');
+            setTimeout(resetUI, 2000);
+          },
+          onModeChange: (mode) => {
+            if (mode.mode === 'speaking') {
+              setStatus('speaking', 'AI 응답 중...');
+            } else if (mode.mode === 'listening') {
+              setStatus('listening', '듣고 있어요...');
+            }
+          },
+        });
+
+      } catch (err) {
+        console.error('시작 실패:', err);
+        if (err.name === 'NotAllowedError') {
+          setStatus('error', '마이크 권한을 허용해주세요');
+        } else {
+          setStatus('error', '연결에 실패했습니다');
+        }
+        setTimeout(resetUI, 2000);
+      }
+    }
+
+    // ===== 대화 종료 =====
+    async function stopConversation() {
+      if (conversation) {
+        await conversation.endSession();
+        conversation = null;
+      }
+      resetUI();
+    }
+
+    function resetUI() {
+      conversation = null;
+      setUIActive(false);
+      setStatus('ready', '대기 중');
+    }
+
+    // ===== 토글 (전역 등록) =====
+    window.toggleConversation = async function () {
+      if (conversation) {
+        await stopConversation();
+      } else {
+        await startConversation();
+      }
+    };
+  </script>
+</body>
+</html>
